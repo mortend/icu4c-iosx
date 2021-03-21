@@ -49,7 +49,7 @@ cp -r $ICU4C_FOLDER $ICU_IOS_SIM_BUILD_FOLDER
 echo "building icu (iOS: iPhoneSimulator)..."
 pushd $ICU_IOS_SIM_BUILD_FOLDER/source
 
-COMMON_CFLAGS="-isysroot $SIMSYSROOT/SDKs/iPhoneSimulator.sdk -I$SIMSYSROOT/SDKs/iPhoneSimulator.sdk/usr/include/"
+COMMON_CFLAGS="-isysroot $SIMSYSROOT/SDKs/iPhoneSimulator.sdk -I$SIMSYSROOT/SDKs/iPhoneSimulator.sdk/usr/include/ -miphoneos-version-min=9.0"
 ./configure --disable-tools --disable-extras --disable-tests --disable-samples --disable-dyload --enable-static --disable-shared prefix=$INSTALL_DIR --host=$HOST_ARC-apple-darwin --with-cross-build=$BUILD_DIR/$ICU_BUILD_FOLDER/source CFLAGS="$COMMON_CFLAGS" CXXFLAGS="$COMMON_CFLAGS -c -stdlib=libc++ -Wall --std=c++17" LDFLAGS="-stdlib=libc++ -L$SIMSYSROOT/SDKs/iPhoneSimulator.sdk/usr/lib/ -isysroot $SIMSYSROOT/SDKs/iPhoneSimulator.sdk -Wl,-dead_strip -lstdc++"
 
 make -j$THREAD_COUNT
@@ -68,7 +68,7 @@ cp -r $ICU4C_FOLDER $ICU_IOS_BUILD_FOLDER
 echo "building icu (iOS: iPhoneOS)..."
 pushd $ICU_IOS_BUILD_FOLDER/source
 
-COMMON_CFLAGS="-arch arm64 -fembed-bitcode-marker -isysroot $DEVSYSROOT/SDKs/iPhoneOS.sdk -I$DEVSYSROOT/SDKs/iPhoneOS.sdk/usr/include/"
+COMMON_CFLAGS="-arch arm64 -arch armv7 -fembed-bitcode-marker -isysroot $DEVSYSROOT/SDKs/iPhoneOS.sdk -I$DEVSYSROOT/SDKs/iPhoneOS.sdk/usr/include/ -miphoneos-version-min=9.0"
 ./configure --disable-tools --disable-extras --disable-tests --disable-samples --disable-dyload --enable-static --disable-shared prefix=$INSTALL_DIR --host=arm-apple-darwin --with-cross-build=$BUILD_DIR/$ICU_BUILD_FOLDER/source CFLAGS="$COMMON_CFLAGS" CXXFLAGS="$COMMON_CFLAGS -c -stdlib=libc++ -Wall --std=c++17" LDFLAGS="-stdlib=libc++ -L$DEVSYSROOT/SDKs/iPhoneOS.sdk/usr/lib/ -isysroot $DEVSYSROOT/SDKs/iPhoneOS.sdk -Wl,-dead_strip -lstdc++"
 make -j$THREAD_COUNT
 popd
@@ -87,3 +87,16 @@ xcodebuild -create-xcframework -library $INSTALL_DIR/lib/libicui18n.a -library $
 xcodebuild -create-xcframework -library $INSTALL_DIR/lib/libicuio.a -library $ICU_IOS_SIM_BUILD_FOLDER/source/lib/libicuio.a -library $ICU_IOS_BUILD_FOLDER/source/lib/libicuio.a -output $INSTALL_DIR/frameworks/icuio.xcframework
 
 xcodebuild -create-xcframework -library $INSTALL_DIR/lib/libicuuc.a -library $ICU_IOS_SIM_BUILD_FOLDER/source/lib/libicuuc.a -library $ICU_IOS_BUILD_FOLDER/source/lib/libicuuc.a -output $INSTALL_DIR/frameworks/icuuc.xcframework
+
+if [ -d $INSTALL_DIR/universal ]; then
+    rm -rf $INSTALL_DIR/universal
+fi
+mkdir $INSTALL_DIR/universal
+
+lipo -create -output $INSTALL_DIR/universal/libicudata.a $ICU_IOS_SIM_BUILD_FOLDER/source/lib/libicudata.a $ICU_IOS_BUILD_FOLDER/source/lib/libicudata.a
+
+lipo -create -output $INSTALL_DIR/universal/libicui18n.a $ICU_IOS_SIM_BUILD_FOLDER/source/lib/libicui18n.a $ICU_IOS_BUILD_FOLDER/source/lib/libicui18n.a
+
+lipo -create -output $INSTALL_DIR/universal/libicuio.a $ICU_IOS_SIM_BUILD_FOLDER/source/lib/libicuio.a $ICU_IOS_BUILD_FOLDER/source/lib/libicuio.a
+
+lipo -create -output $INSTALL_DIR/universal/libicuuc.a $ICU_IOS_SIM_BUILD_FOLDER/source/lib/libicuuc.a $ICU_IOS_BUILD_FOLDER/source/lib/libicuuc.a
